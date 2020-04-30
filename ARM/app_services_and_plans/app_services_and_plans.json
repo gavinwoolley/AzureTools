@@ -1,0 +1,158 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "environment": {
+            "type": "string"
+        },
+        "organization": {
+            "type": "string"
+        },
+        "buildver": {
+            "type": "string"
+        },
+        "apps": {
+            "type": "array"
+        },
+        "app_plans": {
+            "type": "array"
+        },
+        "location": {
+            "type": "string",
+            "allowedValues": [
+                "Uk South",
+                "Uk West"
+            ]
+        },
+        "stagingSlotName": {
+            "type": "string",
+            "defaultValue": "staging",
+            "metadata": {
+                "description": "The name of the staging slot"
+                }
+        }
+    },
+    "variables": {
+        "tagsvar": {
+            "environment": "[parameters('environment')]",
+            "buildver": "[parameters('buildver')]"
+        },
+        "as_name_suffix": "[if(contains(toLower(parameters('location')),'uk south'),'-uks', if(contains(toLower(parameters('location')),'uk west'),'-ukw','-as'))]",
+        "asp_name_suffix": "[if(contains(toLower(parameters('location')),'uk south'),'-uks-asp', if(contains(toLower(parameters('location')),'uk west'),'-ukw-asp','-asp'))]",
+        "common_app_settings": {"BuildNumber": "1.0.0"},
+        "common_site_props": {
+            "alwaysOn": true,
+            "ftpsState": "Disabled",
+            "http20Enabled": true,
+            "minTlsVersion": "1.2",
+            "webSocketsEnabled": false
+            }
+    },
+    "resources": [
+        {
+            "name": "[concat(parameters('organization'),'-',parameters('environment'),'-',parameters('app_plans')[copyIndex('appServicePlans')].name, variables('asp_name_suffix'))]",
+            "type": "Microsoft.Web/serverfarms",
+            "apiVersion": "2019-08-01",
+            "kind": "app",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tagsvar')]",
+            "properties": "[parameters('app_plans')[copyIndex('appServicePlans')].properties]",
+            "sku": "[parameters('app_plans')[copyIndex('appServicePlans')].sku]",
+            "copy": {
+                "name": "appServicePlans",
+                "count": "[length(parameters('app_plans'))]"
+            }
+        },
+        {
+            "name": "[if(startsWith(toLower(parameters('apps')[copyIndex('apps')].kind),'function'),concat(parameters('organization'),'-',parameters('environment'),'-',parameters('apps')[copyIndex('apps')].name, variables('as_name_suffix'),'-fa'), if(startsWith(toLower(parameters('apps')[copyIndex('apps')].kind),'app'),concat(parameters('organization'),'-',parameters('environment'),'-',parameters('apps')[copyIndex('apps')].name, variables('as_name_suffix'),'-as'),'-as'))]",
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "2019-08-01",
+            "location": "[parameters('location')]",
+            "tags": "[variables('tagsvar')]",
+            "dependsOn": ["appServicePlans"],
+            "kind": "[parameters('apps')[copyIndex('apps')].kind]",
+            "properties": {
+                "clientAffinityEnabled": "[parameters('apps')[copyIndex('apps')].clientAffinityEnabled]",
+                "httpsOnly": "[parameters('apps')[copyIndex('apps')].httpsOnly]",
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', concat(parameters('organization'),'-', parameters('environment'),'-', parameters('apps')[copyIndex('apps')].hostingPlan, variables('asp_name_suffix')))]"
+            },
+            "resources": [
+                {
+                    "name": "[if(startsWith(toLower(parameters('apps')[copyIndex('apps')].kind),'function'),concat(parameters('organization'),'-',parameters('environment'),'-',parameters('apps')[copyIndex('apps')].name, variables('as_name_suffix'),'-fa/appsettings'), if(startsWith(toLower(parameters('apps')[copyIndex('apps')].kind),'app'),concat(parameters('organization'),'-',parameters('environment'),'-',parameters('apps')[copyIndex('apps')].name, variables('as_name_suffix'),'-as/appsettings'),'-as/appsettings'))]",
+                    "apiVersion": "2019-08-01",
+                    "type": "Microsoft.Web/sites/config",
+                    "dependsOn": [
+                        "[if(startsWith(toLower(parameters('apps')[copyIndex('apps')].kind),'function'),concat(parameters('organization'),'-',parameters('environment'),'-',parameters('apps')[copyIndex('apps')].name, variables('as_name_suffix'),'-fa'), if(startsWith(toLower(parameters('apps')[copyIndex('apps')].kind),'app'),concat(parameters('organization'),'-',parameters('environment'),'-',parameters('apps')[copyIndex('apps')].name, variables('as_name_suffix'),'-as'),'-as'))]"
+                    ],
+                    "properties": "[union(variables('common_app_settings'),parameters('apps')[copyIndex('apps')].appsettings.production)]"
+                },
+                {
+                    "name": "[if(startsWith(toLower(parameters('apps')[copyIndex('apps')].kind),'function'),concat(parameters('organization'),'-',parameters('environment'),'-',parameters('apps')[copyIndex('apps')].name, variables('as_name_suffix'),'-fa/web'), if(startsWith(toLower(parameters('apps')[copyIndex('apps')].kind),'app'),concat(parameters('organization'),'-',parameters('environment'),'-',parameters('apps')[copyIndex('apps')].name, variables('as_name_suffix'),'-as/web'),'-as/web'))]",
+                    "apiVersion": "2019-08-01",
+                    "type": "Microsoft.Web/sites/config",
+                    "dependsOn": [
+                        "[if(startsWith(toLower(parameters('apps')[copyIndex('apps')].kind),'function'),concat(parameters('organization'),'-',parameters('environment'),'-',parameters('apps')[copyIndex('apps')].name, variables('as_name_suffix'),'-fa'), if(startsWith(toLower(parameters('apps')[copyIndex('apps')].kind),'app'),concat(parameters('organization'),'-',parameters('environment'),'-',parameters('apps')[copyIndex('apps')].name, variables('as_name_suffix'),'-as'),'-as'))]"
+                    ],
+                    "properties": "[union(variables('common_site_props'),parameters('apps')[copyIndex('apps')].siteProperties)]"
+                },
+                {
+                    "name": "[if(startsWith(toLower(parameters('apps')[copyIndex('apps')].kind),'function'),concat(parameters('organization'),'-',parameters('environment'),'-',parameters('apps')[copyIndex('apps')].name, variables('as_name_suffix'),'-fa/slotconfignames'), if(startsWith(toLower(parameters('apps')[copyIndex('apps')].kind),'app'),concat(parameters('organization'),'-',parameters('environment'),'-',parameters('apps')[copyIndex('apps')].name, variables('as_name_suffix'),'-as/slotconfignames'),'-as/slotconfignames'))]",
+                    "apiVersion": "2019-08-01",
+                    "condition": "[parameters('apps')[copyIndex('apps')].hasDeploymentSlot]",
+                    "type": "Microsoft.Web/sites/config",
+                    "location": "[parameters('location')]",
+                    "dependsOn": [
+                        "[if(startsWith(toLower(parameters('apps')[copyIndex('apps')].kind),'function'),concat(parameters('organization'),'-',parameters('environment'),'-',parameters('apps')[copyIndex('apps')].name, variables('as_name_suffix'),'-fa'), if(startsWith(toLower(parameters('apps')[copyIndex('apps')].kind),'app'),concat(parameters('organization'),'-',parameters('environment'),'-',parameters('apps')[copyIndex('apps')].name, variables('as_name_suffix'),'-as'),'-as/'))]"
+                    ],
+                    "properties": {
+                        "appSettingNames": "[parameters('apps')[copyIndex('apps')].appsettings.sticky_app_settings]"
+                    }
+                },
+                {
+                    "name": "[if(startsWith(toLower(parameters('apps')[copyIndex('apps')].kind),'function'),concat(parameters('organization'),'-',parameters('environment'),'-',parameters('apps')[copyIndex('apps')].name, variables('as_name_suffix'),'-fa','/', parameters('stagingSlotName')), if(startsWith(toLower(parameters('apps')[copyIndex('apps')].kind),'app'),concat(parameters('organization'),'-',parameters('environment'),'-',parameters('apps')[copyIndex('apps')].name, variables('as_name_suffix'),'-as','/', parameters('stagingSlotName')),concat('-as/', parameters('stagingSlotName'))))]",
+                    "apiVersion": "2019-08-01",
+                    "condition": "[parameters('apps')[copyIndex('apps')].hasDeploymentSlot]",
+                    "type": "Microsoft.Web/sites/slots",
+                    "kind": "[parameters('apps')[copyIndex('apps')].kind]",
+                    "location": "[parameters('location')]",
+                    "dependsOn": [
+                        "[if(startsWith(toLower(parameters('apps')[copyIndex('apps')].kind),'function'),concat(parameters('organization'),'-',parameters('environment'),'-',parameters('apps')[copyIndex('apps')].name, variables('as_name_suffix'),'-fa'), if(startsWith(toLower(parameters('apps')[copyIndex('apps')].kind),'app'),concat(parameters('organization'),'-',parameters('environment'),'-',parameters('apps')[copyIndex('apps')].name, variables('as_name_suffix'),'-as'),'-as/'))]"
+                    ],
+                    "properties": {},
+                    "resources": [
+                        {
+                            "apiVersion": "2019-08-01",
+                            "condition": "[parameters('apps')[copyIndex('apps')].hasDeploymentSlot]",
+                            "name": "appsettings",
+                            "type": "config",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Web/sites/slots', if(startsWith(toLower(parameters('apps')[copyIndex('apps')].kind),'function'),concat(parameters('organization'),'-',parameters('environment'),'-',parameters('apps')[copyIndex('apps')].name, variables('as_name_suffix'),'-fa'), if(startsWith(toLower(parameters('apps')[copyIndex('apps')].kind),'app'),concat(parameters('organization'),'-',parameters('environment'),'-',parameters('apps')[copyIndex('apps')].name, variables('as_name_suffix'),'-as'),concat('-as'))),parameters('stagingSlotName'))]"
+                            ],
+                            "properties": "[union(variables('common_app_settings'),parameters('apps')[copyIndex('apps')].appsettings.staging)]"
+                        },
+                        {
+                            "apiVersion": "2019-08-01",
+                            "name": "web",
+                            "condition": "[parameters('apps')[copyIndex('apps')].hasDeploymentSlot]",
+                            "type": "config",
+                            "dependsOn": [
+                                "[resourceId('Microsoft.Web/sites/slots', if(startsWith(toLower(parameters('apps')[copyIndex('apps')].kind),'function'),concat(parameters('organization'),'-',parameters('environment'),'-',parameters('apps')[copyIndex('apps')].name, variables('as_name_suffix'),'-fa'), if(startsWith(toLower(parameters('apps')[copyIndex('apps')].kind),'app'),concat(parameters('organization'),'-',parameters('environment'),'-',parameters('apps')[copyIndex('apps')].name, variables('as_name_suffix'),'-as'),concat('-as'))),parameters('stagingSlotName'))]"
+                            ],
+                            "properties": "[union(variables('common_site_props'),parameters('apps')[copyIndex('apps')].siteProperties)]"
+                        }
+                    ],
+                    "identity": {
+                        "type": "systemAssigned"
+                    }
+                }
+            ],
+            "identity": {
+                "type": "systemAssigned"
+            },
+            "copy": {
+                "name": "apps",
+                "count": "[length(parameters('apps'))]"
+            }
+        }
+    ]
+}
