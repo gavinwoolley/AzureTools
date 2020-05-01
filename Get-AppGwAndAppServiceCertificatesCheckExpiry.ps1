@@ -74,7 +74,6 @@ function Get-AllAppGatewayCertificates {
                         $expiredCertsMember = New-Object System.Object
                         $expiredCertsMember | Add-Member -type NoteProperty -name AppGatewayName -value $AppGateway.name
                         $expiredCertsMember | Add-Member -type NoteProperty -name ResourceGroupName -value $AppGateway.ResourceGroupName
-                        $expiredCertsMember | Add-Member -type NoteProperty -name Cert -value $cert
                         $expiredCertsMember | Add-Member -type NoteProperty -name Issuer -value $cert.Issuer
                         $expiredCertsMember | Add-Member -type NoteProperty -name SubjectName -value $cert.SubjectName.Name
                         $expiredCertsMember | Add-Member -type NoteProperty -name NotAfter -value $cert.NotAfter
@@ -94,6 +93,9 @@ function Get-AllAppGatewayCertificates {
     return $expiredAppGwCerts
 }
 
+
+
+
 ################### Script Execution Starts Here ###################
 
 #Login with your AAD credentials
@@ -108,3 +110,21 @@ $expiredAppGwCerts = Get-AllAppGatewayCertificates -FutureDateWindow 40
 #Display Certs in output grid for you to confirm results
 $expiredCerts | Out-GridView
 $expiredAppGwCerts  | Out-GridView
+
+##############
+Set-PSRepository PSGallery -InstallationPolicy Trusted
+Install-Module -Name Posh-ACME -Confirm:$False
+
+$az = Connect-AzAccount -Subscription "SubscriptionName"
+$subscriptionID = $az.Context.Subscription.Id
+
+$ctx = Get-AzContext
+#$token = (az account get-access-token --resource 'https://management.core.windows.net/' | ConvertFrom-Json).accessToken
+$token = ($ctx.TokenCache.ReadItems() | ?{ $_.TenantId -eq $ctx.Subscription.TenantId -and $_.resource -eq 'https://management.core.windows.net/'} | Select -First 1).AccessToken
+
+$azParams = @{
+    AZSubscriptionId=$subscriptionID
+    AZAccessToken=$token
+  }
+
+New-PACertificate '*.testdomain.com','testdomain.com' -AcceptTOS -DnsPlugin Azure -PluginArgs $azParams -Force
