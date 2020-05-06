@@ -73,9 +73,12 @@ function Get-AllAppGatewayCertificates {
                     if ($cert.NotAfter -le $dateWindow ) {
                         $expiredCertsMember = New-Object System.Object
                         $expiredCertsMember | Add-Member -type NoteProperty -name AppGatewayName -value $AppGateway.name
+                        $expiredCertsMember | Add-Member -type NoteProperty -name CertName -value $appGatewayCert.Name
                         $expiredCertsMember | Add-Member -type NoteProperty -name ResourceGroupName -value $AppGateway.ResourceGroupName
                         $expiredCertsMember | Add-Member -type NoteProperty -name Issuer -value $cert.Issuer
+                        $expiredCertsMember | Add-Member -type NoteProperty -name SubjectNameUnicode -value $cert.DnsNameList.Unicode
                         $expiredCertsMember | Add-Member -type NoteProperty -name SubjectName -value $cert.SubjectName.Name
+                        $expiredCertsMember | Add-Member -type NoteProperty -name SubscriptionId -value $subscription.SubscriptionId
                         $expiredCertsMember | Add-Member -type NoteProperty -name NotAfter -value $cert.NotAfter
                         $expiredCertsMember | Add-Member -type NoteProperty -name Thumbprint -value $cert.Thumbprint
 
@@ -93,8 +96,51 @@ function Get-AllAppGatewayCertificates {
     return $expiredAppGwCerts
 }
 
+function Set-NewLetsEncryptCertOnAppGw {
+    param (
+        [Parameter(Mandatory = $true)]
+        $expiredAppGwCerts
+    )
 
+    $Length = 12
+    $characters = 'abcdefghkmnprstuvwxyz23456789$%&?*+#'
+    $PfxPassword = -join ($characters.ToCharArray() | Get-Random -Count $Length) 
+        
+    Set-PSRepository PSGallery -InstallationPolicy Trusted
+    Install-Module -Name Posh-ACME -Confirm:$False
 
+    $ctx = Get-AzContext
+    $token = ($ctx.TokenCache.ReadItems() | ?{ $_.TenantId -eq $ctx.Subscription.TenantId -and $_.resource -eq 'https://management.core.windows.net/'} | Select -First 1).AccessToken
+
+    $azParams = @{
+        AZSubscriptionId=$subscriptionID
+        AZAccessToken=$token
+      }
+
+    foreach ($expiredAppGwCert in $expiredAppGwCerts){
+
+        #check cert not already created first
+        $LetsEncryptCerts = Get-PACertificate
+
+        foreach ($LetsEncryptCert in $LetsEncryptCerts) {
+            $CertToBeUsed = $LetsEncryptCert | where-object {$LetsEncryptCert.Subject -eq $expiredAppGwCert.SubjectName} 
+            Select-AzSubscription -SubscriptionId $expiredAppGwCert.SubscriptionId | Out-Null
+            $AppGateway = Get-AzApplicationGateway -Name $expiredAppGwCert.AppGatewayName -ResourceGroupName $expiredAppGwCert.ResourceGroupName
+            
+            $certDate = Get-Date $CertToBeUsed.NotBefore
+            $nowMinus10 = (Get-Date).adddays(-1)
+
+            if($certDate -lt $nowMinus10){
+                $LetsEncryptCert = New-PACertificate $expiredAppGwCert.SubjectNameUnicode -AcceptTOS -DnsPlugin Azure -PluginArgs $azParams -PfxPass $PfxPassword -Force 
+                Set-AzApplicationGatewaySslCertificate -Name $expiredAppGwCert.CertName -ApplicationGateway $AppGateway -CertificateFile $LetsEncryptCert.PfxFile -Password $PfxPassword | Out-Null
+            }
+            else {
+                $PfxPassword = $LetsEncryptCerts.PfxPass | ConvertFrom-SecureString -AsPlainText
+                Set-AzApplicationGatewaySslCertificate -Name $expiredAppGwCert.CertName -ApplicationGateway $AppGateway -CertificateFile $CertToBeUsed.PfxFile -Password $PfxPassword | Out-Null
+            }
+        }   
+    }
+}
 
 ################### Script Execution Starts Here ###################
 
@@ -104,27 +150,10 @@ Login-AzAccount
 #Query all certs in all Subs in all RGs
 #Date window is how many days in the future to check for expiry
 $expiredCerts = Get-AllWebAppCertificates -FutureDateWindow 40
-
 $expiredAppGwCerts = Get-AllAppGatewayCertificates -FutureDateWindow 40
 
 #Display Certs in output grid for you to confirm results
 $expiredCerts | Out-GridView
 $expiredAppGwCerts  | Out-GridView
 
-##############
-Set-PSRepository PSGallery -InstallationPolicy Trusted
-Install-Module -Name Posh-ACME -Confirm:$False
-
-$az = Connect-AzAccount -Subscription "SubscriptionName"
-$subscriptionID = $az.Context.Subscription.Id
-
-$ctx = Get-AzContext
-#$token = (az account get-access-token --resource 'https://management.core.windows.net/' | ConvertFrom-Json).accessToken
-$token = ($ctx.TokenCache.ReadItems() | ?{ $_.TenantId -eq $ctx.Subscription.TenantId -and $_.resource -eq 'https://management.core.windows.net/'} | Select -First 1).AccessToken
-
-$azParams = @{
-    AZSubscriptionId=$subscriptionID
-    AZAccessToken=$token
-  }
-
-New-PACertificate '*.testdomain.com','testdomain.com' -AcceptTOS -DnsPlugin Azure -PluginArgs $azParams -Force
+Set-NewLetsEncryptCertOnAppGw -expiredAppGwCerts $expiredAppGwCerts
