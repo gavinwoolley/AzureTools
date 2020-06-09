@@ -72,7 +72,7 @@
             "false": [
                 {
                     "name": "lorem",
-                    "TTL": 1,
+                    "ttl": 1,
                     "records": [
                         {
                             "ipv4Address": "23.100.50.51"
@@ -86,7 +86,7 @@
             "true": "[parameters('mxRecords')]",
             "false": [
                 {
-                    "TTL": 1,
+                    "ttl": 1,
                     "records": [
                         {
                             "exchange": "dummy.info.com",
@@ -102,7 +102,7 @@
             "false": [
                 {
                     "name": "@",
-                    "TTL": 1,
+                    "ttl": 1,
                     "records": [
                         {
                             "value": [
@@ -118,7 +118,7 @@
             "true": "[parameters('srvRecords')]",
             "false": [
                 {
-                    "TTL": 1,
+                    "ttl": 1,
                     "name": "dummy",
                     "port": 1,
                     "priority": 1,
@@ -168,8 +168,8 @@
             ],
             "properties": {
                 "name": "[variables('aRecordsCounter')[copyIndex()].name]",
-                "TTL": "[variables('aRecordsCounter')[copyIndex()].TTL]",
-                "ARecords": "[variables('aRecordsCounter')[copyIndex()].records]"
+                "ttl": "[variables('aRecordsCounter')[copyIndex()].ttl]",
+                "aRecords": "[variables('aRecordsCounter')[copyIndex()].records]"
             },
             "copy": {
                 "name": "aRecordsCopy",
@@ -185,8 +185,8 @@
                 "[resourceId('Microsoft.Network/privateDnsZones', parameters('zoneName'))]"
             ],
             "properties": {
-                "TTL": "[variables('mxRecordsCounter')[copyIndex()].TTL]",
-                "MXRecords": "[variables('mxRecordsCounter')[copyIndex()].records]"
+                "ttl": "[variables('mxRecordsCounter')[copyIndex()].ttl]",
+                "mxRecords": "[variables('mxRecordsCounter')[copyIndex()].records]"
             },
             "copy": {
                 "name": "mxCopy",
@@ -202,8 +202,8 @@
                 "[resourceId('Microsoft.Network/privateDnsZones', parameters('zoneName'))]"
             ],
             "properties": {
-                "TTL": "[variables('txtRecordsCounter')[copyIndex()].TTL]",
-                "TXTRecords": "[variables('txtRecordsCounter')[copyIndex()].records]"
+                "ttl": "[variables('txtRecordsCounter')[copyIndex()].ttl]",
+                "txtRecords": "[variables('txtRecordsCounter')[copyIndex()].records]"
             },
             "copy": {
                 "name": "txtCopy",
@@ -219,8 +219,8 @@
                 "[resourceId('Microsoft.Network/privateDnsZones', parameters('zoneName'))]"
             ],
             "properties": {
-                "TTL": "[variables('srvRecordsCounter')[copyIndex()].TTL]",
-                "SRVRecords": [
+                "ttl": "[variables('srvRecordsCounter')[copyIndex()].ttl]",
+                "srvRecords": [
                     {
                         "port": "[variables('srvRecordsCounter')[copyIndex()].port]",
                         "priority": "[variables('srvRecordsCounter')[copyIndex()].priority]",

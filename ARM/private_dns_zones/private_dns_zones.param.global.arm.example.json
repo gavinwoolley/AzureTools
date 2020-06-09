@@ -1,5 +1,5 @@
 {
-    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
         "zoneName": {
@@ -23,7 +23,7 @@
             "value": [
                 {
                     "name": "www",
-                    "TTL": 3600,
+                    "ttl": 3600,
                     "records": [
                         {
                             "ipv4Address": "23.100.50.55"
@@ -38,7 +38,7 @@
         "mxRecords": {
             "value": [
                 {
-                    "TTL": 3600,
+                    "ttl": 3600,
                     "records": [
                         {
                             "exchange": "eu-smtp-inbound-1.mimecast.com",
@@ -56,7 +56,7 @@
             "value": [
                 {
                     "name": "@",
-                    "TTL": 3600,
+                    "ttl": 3600,
                     "records": [
                         {
                             "value": [
@@ -75,7 +75,7 @@
         "srvRecords": {
             "value": [
                 {
-                    "TTL": 3600,
+                    "ttl": 3600,
                     "name": "_sipfederationtls._tcp",
                     "port": 5061,
                     "priority": 100,
@@ -83,7 +83,7 @@
                     "weight": 1
                 },
                 {
-                    "TTL": 3600,
+                    "ttl": 3600,
                     "name": "_sip._tls",
                     "port": 443,
                     "priority": 100,
