@@ -1,0 +1,102 @@
+name: $(Major).$(Minor).$(Patch)
+
+trigger:
+  branches:
+    include:
+      - master
+  paths:
+    exclude:
+      - README.md
+    include:
+      - ARM/app_services_and_plans/*
+      - ARM/dns_zones/*
+
+resources:
+  - repo: self
+
+variables:
+  Major: 1
+  Minor: 0
+  Patch: $[counter(format('{0}.{1}', variables['Major'], variables['Minor']), 0)]
+  #Assignment File Transforms
+  parameters.buildver.value: $(Build.BuildNumber)
+  parameters.environment.value: $(Environment.Name)
+  variables.common_app_settings.XoCustomSetting: $(Build.BuildNumber)
+
+stages:
+  - stage: Build
+    displayName: Build
+    jobs:
+      - job: Build
+        displayName: Build ARM Templates
+        pool:
+          vmImage: "windows-latest"
+        workspace:
+          clean: all
+        steps:
+          - template: Shared/pr-build.yml
+          - template: Shared/arm-build.yml
+
+  #
+  # Commented out SitNF AppService Deploy until templates confirmed again
+  #
+  #- stage: DeployToSitNfUks
+  #  displayName: Deploy to SITNF UKS
+  #  dependsOn: Build
+  #  variables:
+  #    parameters.location.value: "Uk South"
+  #    parameters.environment.value: $(Environment.Name)
+  #  jobs:
+  #  - deployment: Deploy_To_SITNF_UKS
+  #    displayName: Deploy to SITNF UKS
+  #    pool:
+  #      vmImage: 'windows-latest'
+  #    environment: sitnf
+  #    strategy:
+  #      runOnce:
+  #        deploy:
+  #          steps:
+  #          - template: Shared/app-service-release.yml
+  #            parameters:
+  #              resourceManagerConnection: Test-EnvironmentSITNF
+  #              subscriptionId: xxxxx-xxxx-xxxx-xxxx-xxxxx
+  #              region: uks
+  #
+  #- stage: DeployToSitNfUkw
+  #  dependsOn: DeployToSitNfUks
+  #  displayName: Deploy to SITNF UKW
+  #  variables:
+  #    parameters.location.value: "Uk West"
+  #    parameters.environment.value: $(Environment.Name)
+  #  jobs:
+  #  - deployment: Deploy_To_SITNF_UKW
+  #    displayName: Deploy to SITNF UKW
+  #    pool:
+  #      vmImage: 'windows-latest'
+  #    environment: sitnf
+  #    strategy:
+  #      runOnce:
+  #        deploy:
+  #          steps:
+  #          - template: Shared/app-service-release.yml
+  #            parameters:
+  #              resourceManagerConnection: Test-EnvironmentSITNF
+  #              subscriptionId: xxxxx-xxxx-xxxx-xxxx-xxxxx
+  #              region: ukw
+  #
+  - stage: DeployToGlobal
+    dependsOn: Build
+    displayName: Deploy to Global
+    jobs:
+      - deployment: Deploy_To_Global
+        displayName: Deploy to Global
+        pool:
+          vmImage: "windows-latest"
+        environment: global
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: Shared/dns-zones-release.yml
+                  parameters:
+                    azureSubscription: xxxxx-xxxx-xxxx-xxxx-xxxxx

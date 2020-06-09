@@ -1,0 +1,64 @@
+{
+    "kind": "template",
+    "properties": {
+        "displayName": "App Insights Template",
+        "description": "Deploys App Insights",
+        "template": {
+            "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+            "contentVersion": "1.0.0.0",
+            "parameters": {
+                "environment": {
+                    "type": "string"
+                },
+                "organization": {
+                    "type": "string"
+                },
+                "buildver": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string",
+                    "allowedValues": [
+                        "Uk South",
+                        "Uk West"
+                    ]
+                }
+            },
+            "variables": {
+                "tagsvar": {
+                    "environment": "[parameters('environment')]",
+                    "buildver": "[parameters('buildver')]"
+                },
+                "ai_name_suffix": "[if(contains(toLower(parameters('location')),'uk south'),'-uks-asi', if(contains(toLower(parameters('location')),'uk west'),'-ukw-asi','-asi'))]"
+            },
+            "resources": [
+                {
+                    "type": "Microsoft.Insights/components",
+                    "kind": "web",
+                    "name": "[concat(parameters('organization'),'-',parameters('environment'),variables('ai_name_suffix'))]",
+                    "apiVersion": "2015-05-01",
+                    "location": "[parameters('location')]",
+                    "tags": "[variables('tagsvar')]",
+                    "properties": {
+                        "Application_Type": "web"
+                    }
+                }
+            ]
+        },
+        "resourceGroup": "GavResourceGroup",
+        "parameters": {
+            "environment": {
+                "value": "[parameters('environment')]"
+            },
+            "organization": {
+                "value": "[parameters('organization')]"
+            },
+            "buildver": {
+                "value": "[parameters('buildver')]"
+            },
+            "location": {
+                "value": "[parameters('location')]"
+            }
+        }
+    }
+}

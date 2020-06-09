@@ -1,0 +1,62 @@
+steps:
+- powershell: |
+    .\arm-template-toolkit\Run-ArmTests.ps1 -templateLocation .\ARM\ -resultLocation $(Pipeline.Workspace)\result\
+  displayName: 'Test ARM Templates'
+  failOnStderr: true
+
+- task: PublishTestResults@2
+  inputs:
+    testResultsFormat: 'NUnit'
+    testResultsFiles: '$(Pipeline.Workspace)\result\*-armttk.xml'
+  condition: always()
+
+- pwsh: |
+    $JsonFiles = Get-ChildItem .\BluePrintEnv\ -Recurse -File -Include *.json
+    $JsonFiles
+
+    foreach ($file in $JsonFiles){
+        $json = Get-Content $file
+        $test = "$json" 
+        $testResults = $test | Test-Json -ErrorAction SilentlyContinue
+
+        Write-host "This is the Test Results Value : $testResults"
+        if ($testResults -eq $true){
+            Write-Output "The FileName: $($File.name) has passed JSON syntax testing"
+        }
+        if ($testResults -eq $false){
+            Write-Host "##vso[task.logissue type=error]The FileName: $($File.name) has failed JSON syntax testing"
+            $failedCount ++
+        }
+    }
+
+    if ($failedCount){
+        exit 1
+    }
+  displayName: 'Test BluePrint JSON'
+  failOnStderr: true
+
+- pwsh: |
+    $JsonFiles = Get-ChildItem .\ARM\ -Recurse -File -Include *.json
+    $JsonFiles
+
+    foreach ($file in $JsonFiles){
+        $json = Get-Content $file
+        $test = "$json" 
+        $testResults = $test | Test-Json -ErrorAction SilentlyContinue
+
+        Write-host "This is the Test Results Value : $testResults"
+        if ($testResults -eq $true){
+            Write-Output "The FileName: $($File.name) has passed JSON syntax testing"
+        }
+        if ($testResults -eq $false){
+            Write-Host "##vso[task.logissue type=error]The FileName: $($File.name) has failed JSON syntax testing"
+            $failedCount ++
+        }
+    }
+
+    if ($failedCount){
+        exit 1
+    }
+  displayName: 'Test ARM Templates JSON'
+  failOnStderr: true
+

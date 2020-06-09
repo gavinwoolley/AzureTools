@@ -1,0 +1,128 @@
+name: $(Major).$(Minor).$(Patch)
+
+trigger:
+  branches:
+    include:
+      - master
+  paths:
+    exclude:
+      - README.md
+    include:
+      - Azure-Pipelines/*
+      - BluePrintEnv/*
+
+resources:
+  - repo: self
+
+variables:
+  Major: 1
+  Minor: 2
+  Patch: $[counter(format('{0}.{1}', variables['Major'], variables['Minor']), 0)]
+  #Assignment File Transforms
+  properties.parameters.buildver.value: $(Build.BuildNumber)
+  properties.parameters.environment.value: $(Environment.Name)
+
+stages:
+  - stage: Build
+    displayName: Build
+    jobs:
+      - job: Build
+        displayName: Build Blueprints
+        pool:
+          vmImage: "windows-latest"
+        workspace:
+          clean: all
+        steps:
+          - template: Shared/pr-build.yml
+          - template: Shared/blueprint-build.yml
+
+  - stage: DeployToTest
+    dependsOn: Build
+    jobs:
+      - deployment: Deploy_To_Test
+        displayName: Deploy Blueprints to Test
+        pool:
+          vmImage: "windows-latest"
+        environment: test
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: Shared/blueprint-release.yml
+                  parameters:
+                    subscription: Test-DevOps00 (xxxxx-xxxx-xxxx-xxxx-xxxxx)
+  - stage: DeployToMVP
+    dependsOn: DeployToTest
+    jobs:
+      - deployment: Deploy_To_MVP
+        displayName: Deploy Blueprints to MVP
+        pool:
+          vmImage: "windows-latest"
+        environment: mvp
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: Shared/blueprint-release.yml
+                  parameters:
+                    subscription: Test-DevOps00 (xxxxx-xxxx-xxxx-xxxx-xxxxx)
+  - stage: DeployToQas1
+    dependsOn: DeployToMVP
+    jobs:
+      - deployment: Deploy_To_Qas1
+        displayName: Deploy Blueprints to QAS1
+        pool:
+          vmImage: "windows-latest"
+        environment: qas1
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: Shared/blueprint-release.yml
+                  parameters:
+                    subscription: Test-DevOps00 (xxxxx-xxxx-xxxx-xxxx-xxxxx)
+  - stage: DeployToQas2
+    dependsOn: DeployToQas1
+    jobs:
+      - deployment: Deploy_To_Qas2
+        displayName: Deploy Blueprints to QAS2
+        pool:
+          vmImage: "windows-latest"
+        environment: qas2
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: Shared/blueprint-release.yml
+                  parameters:
+                    subscription: Test-DevOps00 (xxxxx-xxxx-xxxx-xxxx-xxxxx)
+  - stage: DeployToPpte2
+    dependsOn: DeployToQas2
+    jobs:
+      - deployment: Deploy_To_Ppte2
+        displayName: Deploy Blueprints to PPTE2
+        pool:
+          vmImage: "windows-latest"
+        environment: ppte2
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: Shared/blueprint-release.yml
+                  parameters:
+                    subscription: Test-DevOps00 (xxxxx-xxxx-xxxx-xxxx-xxxxx)
+  - stage: DeployToPpte3
+    dependsOn: DeployToPpte2
+    jobs:
+      - deployment: Deploy_To_Ppte3
+        displayName: Deploy Blueprints to PPTE3
+        pool:
+          vmImage: "windows-latest"
+        environment: ppte3
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: Shared/blueprint-release.yml
+                  parameters:
+                    subscription: Test-DevOps00 (xxxxx-xxxx-xxxx-xxxx-xxxxx)

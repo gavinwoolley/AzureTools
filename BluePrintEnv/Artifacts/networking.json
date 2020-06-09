@@ -1,0 +1,128 @@
+{
+    "kind": "template",
+    "properties": {
+        "displayName": "vNet and SubNet Template",
+        "description": "",
+        "template": {
+            "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+            "contentVersion": "1.0.0.0",
+            "parameters": {
+                "environment": {
+                    "type": "string"
+                },
+                "organization": {
+                    "type": "string"
+                },
+                "vnet": {
+                    "type": "object"
+                },
+                "buildver": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string",
+                    "allowedValues": [
+                        "Uk South",
+                        "Uk West"
+                    ]
+                }
+            },
+            "variables": {
+                "nsg_name_suffix": "[if(contains(toLower(parameters('location')),'uk south'),'-uks-nsg', if(contains(toLower(parameters('location')),'uk west'),'-ukw-nsg','-nsg'))]",
+                "sub_name_suffix": "[if(contains(toLower(parameters('location')),'uk south'),'-uks-sub', if(contains(toLower(parameters('location')),'uk west'),'-ukw-sub','-sub'))]",
+                "vnet_name_suffix": "[if(contains(toLower(parameters('location')),'uk south'),'-uks-vnet', if(contains(toLower(parameters('location')),'uk west'),'-ukw-vnet','-vnet'))]",
+                "copy": [
+                    {
+                        "name": "subnetsBase",
+                        "count": "[length(parameters('vnet').subnets)]",
+                        "input": {
+                            "properties": {
+                                "addressPrefix": "[parameters('vnet').subnets[copyIndex('subnetsBase')].addressPrefix]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "subnetsNSG",
+                        "count": "[length(parameters('vnet').subnets)]",
+                        "input": {
+                            "networkSecurityGroup": {
+                                "deploy": "[if(parameters('vnet').subnets[copyIndex('subnetsNSG')].networkSecurityGroup,'deploy','skip')]",
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups/', concat(parameters('organization'),'-',parameters('environment'),'-',parameters('vnet').subnets[copyIndex('subnetsNSG')].name,variables('nsg_name_suffix')))]"
+                            }
+                        }
+                    },
+                    {
+                        "name": "subnetsSvcEP",
+                        "count": "[length(parameters('vnet').subnets)]",
+                        "input": {
+                            "serviceEndpoints": "[if(contains(parameters('vnet').subnets[copyIndex('subnetsSvcEP')], 'serviceEndpoints'), parameters('vnet').subnets[copyIndex('subnetsSvcEP')].serviceEndpoints, 'skip')]"
+                        }
+                    }
+                ]
+            },
+            "resources": [
+                {
+                    "condition": "[not(contains(variables('subnetsNSG')[copyIndex()].networkSecurityGroup.deploy, 'skip'))]",
+                    "apiVersion": "2019-11-01",
+                    "name": "[concat(parameters('organization'),'-',parameters('environment'),'-',parameters('vnet').subnets[copyIndex()].name,variables('nsg_name_suffix'))]",
+                    "location": "[parameters('location')]",
+                    "type": "Microsoft.Network/networkSecurityGroups",
+                    "tags": {
+                        "environment": "[parameters('environment')]",
+                        "buildver": "[parameters('buildver')]"
+                    },
+                    "copy": {
+                        "name": "nsg",
+                        "count": "[length(parameters('vnet').subnets)]"
+                    }
+                },
+                {
+                    "name": "[concat(parameters('organization'),'-',parameters('environment'),variables('vnet_name_suffix'))]",
+                    "type": "Microsoft.Network/virtualNetworks",
+                    "tags": {
+                        "environment": "[parameters('environment')]",
+                        "buildver": "[parameters('buildver')]"
+                    },
+                    "apiVersion": "2019-11-01",
+                    "location": "[parameters('location')]",
+                    "dependsOn": [
+                        "nsg"
+                    ],
+                    "properties": {
+                        "addressSpace": {
+                            "addressPrefixes": "[parameters('vnet').vnet.addressPrefixes]"
+                        },
+                        "copy": [
+                            {
+                                "name": "subnets",
+                                "count": "[length(parameters('vnet').subnets)]",
+                                "input": {
+                                    "name": "[concat(parameters('organization'),'-',parameters('environment'),'-',parameters('vnet').subnets[copyIndex('subnets')].name,variables('sub_name_suffix'))]",
+                                    "properties": "[union(variables('subnetsBase')[copyIndex('subnets')].properties, if(equals(variables('subnetsNSG')[copyIndex('subnets')].networkSecurityGroup.deploy, 'skip'), variables('subnetsBase')[copyIndex('subnets')].properties, variables('subnetsNSG')[copyIndex('subnets')]), if(equals(variables('subnetsSvcEP')[copyIndex('subnets')].serviceEndpoints, 'skip'),variables('subnetsBase')[copyIndex('subnets')].properties, variables('subnetsSvcEP')[copyIndex('subnets')]))]"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        "resourceGroup": "GavResourceGroup",
+        "parameters": {
+            "vnet": {
+                "value": "[parameters('vnet')]"
+            },
+            "organization": {
+                "value": "[parameters('organization')]"
+            },
+            "environment": {
+                "value": "[parameters('environment')]"
+            },
+            "buildver": {
+                "value": "[parameters('buildver')]"
+            },
+            "location": {
+                "value": "[parameters('location')]"
+            }
+        }
+    }
+}

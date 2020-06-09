@@ -1,0 +1,18 @@
+steps:
+- task: PublishPipelineArtifact@1
+  displayName: 'Publish AppService Templates Artifact'
+  inputs:
+    targetPath: ARM\app_services_and_plans\
+    artifact: 'AppServiceArtifact'
+
+- task: PublishPipelineArtifact@1
+  displayName: 'Publish DNS Zones Templates Artifact'
+  inputs:
+    targetPath: ARM\dns_zones\
+    artifact: 'DnsZonesArtifact'
+
+- task: PublishPipelineArtifact@1
+  displayName: 'Publish PowerShell Modules'
+  inputs:
+    targetPath: ARM\modules\
+    artifact: 'PowerShellModulesArtifact'

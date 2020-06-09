@@ -1,0 +1,15 @@
+steps:
+  - task: CreateBlueprint@1
+    displayName: "Create Azure Blueprint"
+    inputs:
+      azureSubscription: "Test-DevOps00 (xxxxxx-xxxx-xxxx-xxxxx-xxxxx)"
+      BlueprintName: TestBluePrint
+      BlueprintPath: BluePrintEnv
+      PublishBlueprint: true
+      Version: "$(Major).$(Minor).$(Patch)"
+      ChangeNote: "$(Build.SourceVersionMessage)"
+  - task: PublishPipelineArtifact@1
+    displayName: "Publish Blueprint Assignment Artifact"
+    inputs:
+      targetPath: BluePrintEnv/AssignmentFile.json
+      artifact: "Blueprint_Assignment"

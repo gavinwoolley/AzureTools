@@ -1,0 +1,24 @@
+{
+    "properties": {
+        "blueprintId": "/subscriptions/ccbdb158-78ce-45c6-b82b-043ededbb12a/providers/Microsoft.Blueprint/blueprints/GavEnv",
+        "resourceGroups": {},
+        "locks": {
+            "mode": "none"
+        },
+        "parameters": {
+            "environment": {
+                "value": "test"
+            },
+            "buildver": {
+                "value": "9.9.9"
+            },
+            "location": {
+                "value": "Uk South"
+            }
+        }
+    },
+    "identity": {
+        "type": "systemAssigned"
+    },
+    "location": "uksouth"
+}

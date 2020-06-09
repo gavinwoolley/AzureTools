@@ -1,0 +1,16 @@
+steps:
+- task: FileTransform@1
+  displayName: 'DNS Param File Transform'
+  inputs:
+    folderPath: $(Pipeline.Workspace)/DnsZonesArtifact/
+    fileType: json
+    targetFiles: |
+      dns_zones.param.global.*
+
+- task: AzurePowerShell@4
+  displayName: 'Deploy Azure DNS Records'
+  inputs:
+    azureSubscription: ${{ parameters.azureSubscription }}
+    scriptType: FilePath
+    scriptPath: $(Pipeline.Workspace)/DnsZonesArtifact/deploy.ps1
+    azurePowerShellVersion: latestVersion

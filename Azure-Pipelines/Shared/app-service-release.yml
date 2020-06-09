@@ -1,0 +1,20 @@
+steps:
+  - task: FileTransform@1
+    displayName: "App Service Param File Transform"
+    inputs:
+      folderPath: $(Pipeline.Workspace)/AppServiceArtifact/
+      fileType: json
+      targetFiles: |
+        app_services_and_plans.param.$(Environment.Name).json
+        app_services_and_plans.json
+
+  - task: AzureResourceManagerTemplateDeployment@3
+    displayName: "App Service Template Deploy"
+    inputs:
+      azureResourceManagerConnection: ${{ parameters.resourceManagerConnection }}
+      subscriptionId: ${{ parameters.subscriptionId }}
+      resourceGroupName: $(Environment.Name)-rg
+      location: Uk South
+      csmFile: $(Pipeline.Workspace)/AppServiceArtifact/app_services_and_plans.json
+      csmParametersFile: $(Pipeline.Workspace)/AppServiceArtifact/app_services_and_plans.param.$(Environment.Name).json
+      deploymentName: "AppServices-$(Environment.Name)-${{ parameters.region }}-$(Build.BuildNumber)"

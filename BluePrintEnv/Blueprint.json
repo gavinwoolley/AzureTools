@@ -1,0 +1,141 @@
+{
+  "properties": {
+    "displayName": "Spoke Environment",
+    "description": "Deploys and configures the spoke environment.",
+    "targetScope": "subscription",
+    "parameters": {
+      "organization": {
+        "type": "string",
+        "metadata": {
+          "displayName": "Organization name, must be unique"
+        },
+        "defaultValue": "gav"
+      },
+      "environment": {
+        "type": "string",
+        "metadata": {
+          "displayName": "Environment",
+          "description": "Select Environment: TEST, MVP, QAS1, QAS2, PPTE2, PPTE3"
+        },
+        "defaultValue": "test",
+        "allowedValues": [
+          "test",
+          "mvp",
+          "qas1",
+          "qas2",
+          "ppte2",
+          "ppte3"
+        ]
+      },
+      "buildver": {
+        "type": "string",
+        "defaultValue": "9.9.9",
+        "metadata": {
+          "displayName": "Build Version Number",
+          "description": "Build Version Number - Auto Populated by Pipeline"
+        }
+      },
+      "location": {
+        "type": "string",
+        "defaultValue": "Uk South",
+        "allowedValues": [
+          "Uk South",
+          "Uk West"
+        ],
+        "metadata": {
+          "displayName": "Location for Resources",
+          "description": "Location for Resources to be built in"
+        }
+      },
+      "resource-group-location": {
+        "type": "string",
+        "metadata": {
+          "displayName": "Resource Group Location"
+        },
+        "defaultValue": "uksouth",
+        "allowedValues": [
+          "uksouth",
+          "ukwest"
+        ]
+      },
+      "vnet": {
+        "type": "object",
+        "metadata": {
+          "displayName": "vNet Settings"
+        },
+        "defaultValue": {
+          "type": "object",
+          "vnet": {
+            "name": "vnet",
+            "addressPrefixes": [
+              "10.164.160.0/20"
+            ]
+          },
+          "subnets": [
+            {
+              "addressPrefix": "10.164.160.0/27",
+              "name": "mgmt",
+              "networkSecurityGroup": true
+            },
+            {
+              "addressPrefix": "10.164.163.0/24",
+              "name": "ase",
+              "networkSecurityGroup": false,
+              "serviceEndpoints": [
+                {
+                  "service": "Microsoft.KeyVault",
+                  "locations": [
+                    "*"
+                  ]
+                },
+                {
+                  "service": "Microsoft.Storage",
+                  "locations": [
+                    "uksouth",
+                    "ukwest"
+                  ]
+                },
+                {
+                  "service": "Microsoft.ServiceBus",
+                  "locations": [
+                    "*"
+                  ]
+                }
+              ]
+            },
+            {
+              "addressPrefix": "10.164.160.64/27",
+              "name": "data",
+              "networkSecurityGroup": true
+            },
+            {
+              "addressPrefix": "10.164.160.96/27",
+              "name": "sftpdmz",
+              "networkSecurityGroup": true
+            },
+            {
+              "addressPrefix": "10.164.160.128/27",
+              "name": "sftpint",
+              "networkSecurityGroup": true
+            },
+            {
+              "addressPrefix": "10.164.164.0/25",
+              "name": "sqlmi",
+              "networkSecurityGroup": true
+            }
+          ]
+        }
+      }
+    },
+    "resourceGroups": {
+      "GavResourceGroup": {
+        "name": "[concat(parameters('organization'), '-', parameters('environment'),'-rg')]",
+        "location": "[parameters('resource-group-location')]",
+        "metadata": {
+          "displayName": "Main Resource Group"
+        },
+        "dependsOn": []
+      }
+    }
+  }
+}

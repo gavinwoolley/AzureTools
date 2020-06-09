@@ -1,0 +1,17 @@
+steps:
+  - task: FileTransform@1
+    displayName: "Assignment File Transform:"
+    inputs:
+      folderPath: $(Pipeline.Workspace)/Blueprint_Assignment/
+      fileType: json
+      targetFiles: AssignmentFile.json
+  - task: AssignBlueprint@1
+    displayName: "Assign Azure Blueprint"
+    inputs:
+      azureSubscription: ${{ parameters.subscription }}
+      AssignmentName: "TestBluePrint-$(Environment.Name)-Assignment"
+      BlueprintName: TestBluePrint
+      ParametersFile: $(Pipeline.Workspace)/Blueprint_Assignment/AssignmentFile.json
+      Wait: true
+      Timeout: 3600
+      StopOnFailure: true

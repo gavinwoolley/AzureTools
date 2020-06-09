@@ -1,0 +1,25 @@
+name: PR-Build-Branch=$(Build.SourceBranchName)-Ver.$(BuildNumber)
+
+resources:
+- repo: self
+
+trigger: none
+
+variables:
+  BuildNumber: $[counter(format('{0}', variables['Build.SourceBranchName']), 1)]
+#Assignment File Transforms
+  properties.parameters.buildver.value: $(Build.BuildNumber)
+  properties.parameters.environment.value: $(Environment.Name)
+
+stages:
+- stage: PRBuild
+  displayName: PR Build
+  jobs:
+  - job: PRBuild
+    displayName: PR Build
+    pool:
+      vmImage: 'windows-latest'
+    workspace:
+      clean: all 
+    steps:
+    - template: Shared/pr-build.yml

@@ -32,7 +32,9 @@ Function Get-AdDnsZonesAndRecords {
                 $a | Add-Member -type NoteProperty -name name -value $record.Hostname
                 $ipv4 = New-Object System.Object
                 $ipv4 | Add-Member -type NoteProperty -name Ipv4Address -value $record.RecordData.IPv4Address.IPAddressToString
-                $a | Add-Member -type NoteProperty -name records -value $ipv4
+                $ipv4records = @()
+                $ipv4records += $ipv4
+                $a | Add-Member -type NoteProperty -name records -value $ipv4records
                 $a | Add-Member -type NoteProperty -name TTL -value $record.TimeToLive.TotalSeconds    
                 $ARecords += $a
             }
@@ -142,7 +144,7 @@ Function Invoke-CreateParameterFile {
         $pathToFolder
     )
     $zoneName = $zone.parameters.ZoneName.value
-    Set-Content -Value ($zone | ConvertTo-Json -Depth 10) -Path "$pathToFolder\dns_zones.param.global.$zoneName.json"
+    Set-Content -Value ($zone | ConvertTo-Json -Depth 10) -Path "$pathToFolder\private_dns_zones.param.global.$zoneName.json"
 }
 
 $pathToFolder = "C:\code\"
