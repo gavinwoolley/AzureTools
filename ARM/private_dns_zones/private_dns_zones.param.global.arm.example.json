@@ -1,5 +1,5 @@
 {
-    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
         "zoneName": {
@@ -19,18 +19,6 @@
                 }
             ]
         },
-        "soa": {
-            "value": [
-                {
-                    "ttl": 3600,
-                    "email": "azuredns-hostmaster.microsoft.com",
-                    "expireTime": 2419200,
-                    "minimumTTL": 300,
-                    "refreshTime": 3600,
-                    "retryTime": 300
-                }
-            ]
-        },
         "aRecords": {
             "value": [
                 {
@@ -43,28 +31,6 @@
                         {
                             "ipv4Address": "23.100.50.56"
                         }
-                    ]
-                }
-            ]
-        },
-        "nsRecords": {
-            "value": [
-                {
-                    "name": "test",
-                    "TTL": 3600,
-                    "records": [
-                        {
-                            "nsdname": "ns1-05.azure-dns.com"
-                        },
-                        {
-                            "nsdname": "ns2-05.azure-dns.net"
-                        },
-                        {
-                            "nsdname": "ns3-05.azure-dns.org"
-                        },
-                        {
-                            "nsdname": "ns4-05.azure-dns.info"
-                        }                        
                     ]
                 }
             ]

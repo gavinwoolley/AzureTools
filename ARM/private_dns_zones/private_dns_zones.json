@@ -1,5 +1,5 @@
 {
-    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
         "zoneName": {
@@ -12,18 +12,6 @@
             "type": "array",
             "metadata": {
                 "description": "An array of cNames for the zoneName, i.e Name:test would create test.zoneName with the alias pointing to the required endpoint"
-            }
-        },
-        "soa": {
-            "type": "array",
-            "metadata": {
-                "description": "An array of values for the Start of Authority (SOA) record"
-            }
-        },
-        "nsRecords": {
-            "type": "array",
-            "metadata": {
-                "description": "An array of values for NS Record settings"
             }
         },
         "aRecords": {
@@ -79,21 +67,6 @@
             ]
         },
         "cnameCounter": "[variables('cnamesEmptyWorkaround')[string(greater(length(parameters('cnames')), 0))]]",
-        "soaEmptyWorkaround": {
-            "true": "[parameters('soa')]",
-            "false": [
-                {
-                    "ttl": 1,
-                    "host": "dummy.value",
-                    "email": "dummy.value",
-                    "expireTime": 1,
-                    "minimumTTL": 1,
-                    "refreshTime": 1,
-                    "retryTime": 1
-                }
-            ]
-        },
-        "soaCounter": "[variables('soaEmptyWorkaround')[string(greater(length(parameters('soa')), 0))]]",
         "aRecordsEmptyWorkaround": {
             "true": "[parameters('aRecords')]",
             "false": [
@@ -109,21 +82,6 @@
             ]
         },
         "aRecordsCounter": "[variables('aRecordsEmptyWorkaround')[string(greater(length(parameters('aRecords')), 0))]]",
-        "nsRecordsEmptyWorkaround": {
-            "true": "[parameters('nsRecords')]",
-            "false": [
-                {
-                    "name": "lorem",
-                    "TTL": 1,
-                    "records": [
-                        {
-                            "nsdname": "ns1-05.azure-dns.com"
-                        }
-                    ]
-                }
-            ]
-        },
-        "nsRecordsCounter": "[variables('nsRecordsEmptyWorkaround')[string(greater(length(parameters('nsRecords')), 0))]]",
         "mxRecordsEmptyWorkaround": {
             "true": "[parameters('mxRecords')]",
             "false": [
@@ -175,7 +133,7 @@
         {
             "name": "[parameters('zoneName')]",
             "type": "Microsoft.Network/privateDnsZones",
-            "apiVersion": "2017-09-01",
+            "apiVersion": "2018-09-01",
             "location": "global",
             "properties": {
             },
@@ -185,13 +143,13 @@
             "condition": "[greater(length(parameters('cnames')), 0)]",
             "name": "[concat(parameters('zoneName'), '/', variables('cnameCounter')[copyIndex()].name)]",
             "type": "Microsoft.Network/privateDnsZones/CNAME",
-            "apiVersion": "2017-09-01",
+            "apiVersion": "2018-09-01",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/privateDnsZones', parameters('zoneName'))]"
             ],
             "properties": {
-                "TTL": "[variables('cnameCounter')[copyIndex()].ttl]",
-                "CNAMERecord": {
+                "ttl": "[variables('cnameCounter')[copyIndex()].ttl]",
+                "cnameRecord": {
                     "cname": "[variables('cnameCounter')[copyIndex()].alias]"
                 }
             },
@@ -201,34 +159,10 @@
             }
         },
         {
-            "condition": "[greater(length(parameters('soa')), 0)]",
-            "name": "[concat(parameters('zoneName'), '/@')]",
-            "type": "Microsoft.Network/privateDnsZones/SOA",
-            "apiVersion": "2017-09-01",
-            "dependsOn": [
-                "[resourceId('Microsoft.Network/privateDnsZones', parameters('zoneName'))]"
-            ],
-            "properties": {
-                "TTL": "[variables('soaCounter')[copyIndex()].ttl]",
-                "SOARecord": {
-                    "expireTime": "[variables('soaCounter')[copyIndex()].expireTime]",
-                    "minimumTTL": "[variables('soaCounter')[copyIndex()].minimumTTL]",
-                    "refreshTime": "[variables('soaCounter')[copyIndex()].refreshTime]",
-                    "retryTime": "[variables('soaCounter')[copyIndex()].retryTime]",
-                    "host": "[first(reference(parameters('ZoneName')).nameServers)]",
-                    "email": "[variables('soaCounter')[copyIndex()].email]"
-                }
-            },
-            "copy": {
-                "name": "soaCopy",
-                "count": "[length(variables('soaCounter'))]"
-            }
-        },
-        {
             "condition": "[greater(length(parameters('aRecords')), 0)]",
             "name": "[concat(parameters('zoneName'), '/', variables('aRecordsCounter')[copyIndex()].name)]",
             "type": "Microsoft.Network/privateDnsZones/A",
-            "apiVersion": "2017-09-01",
+            "apiVersion": "2018-09-01",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/privateDnsZones', parameters('zoneName'))]"
             ],
@@ -243,28 +177,10 @@
             }
         },
         {
-            "condition": "[greater(length(parameters('nsRecords')), 0)]",
-            "name": "[concat(parameters('zoneName'), '/', variables('nsRecordsCounter')[copyIndex()].name)]",
-            "type": "Microsoft.Network/privateDnsZones/NS",
-            "apiVersion": "2017-09-01",
-            "dependsOn": [
-                "[resourceId('Microsoft.Network/privateDnsZones', parameters('zoneName'))]"
-            ],
-            "properties": {
-                "name": "[variables('nsRecordsCounter')[copyIndex()].name]",
-                "TTL": "[variables('nsRecordsCounter')[copyIndex()].TTL]",
-                "NSRecords": "[variables('nsRecordsCounter')[copyIndex()].records]"
-            },
-            "copy": {
-                "name": "nsRecordsCopy",
-                "count": "[length(variables('nsRecordsCounter'))]"
-            }
-        },
-        {
             "condition": "[greater(length(parameters('mxRecords')), 0)]",
             "name": "[concat(parameters('zoneName'),'/','@')]",
             "type": "Microsoft.Network/privateDnsZones/MX",
-            "apiVersion": "2017-09-01",
+            "apiVersion": "2018-09-01",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/privateDnsZones', parameters('zoneName'))]"
             ],
@@ -281,7 +197,7 @@
             "condition": "[greater(length(parameters('txtRecords')), 0)]",
             "name": "[concat(parameters('zoneName'),'/',variables('txtRecordsCounter')[copyIndex()].name)]",
             "type": "Microsoft.Network/privateDnsZones/TXT",
-            "apiVersion": "2017-09-01",
+            "apiVersion": "2018-09-01",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/privateDnsZones', parameters('zoneName'))]"
             ],
@@ -298,7 +214,7 @@
             "condition": "[greater(length(parameters('srvRecords')), 0)]",
             "name": "[concat(parameters('zoneName'),'/', variables('srvRecordsCounter')[copyIndex()].name)]",
             "type": "Microsoft.Network/privateDnsZones/SRV",
-            "apiVersion": "2017-09-01",
+            "apiVersion": "2018-09-01",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/privateDnsZones', parameters('zoneName'))]"
             ],
