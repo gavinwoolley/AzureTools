@@ -38,6 +38,12 @@
                 "description": "An array of values for SRV Record settings"
             }
         },
+        "vNetLinks": {
+            "type": "array",
+            "metadata": {
+                "description": "An array of vNets to Link SubNets to"
+            }
+        },
         "environment": {
             "type": "string",
             "metadata": {
@@ -127,7 +133,16 @@
                 }
             ]
         },
-        "srvRecordsCounter": "[variables('srvRecordsEmptyWorkaround')[string(greater(length(parameters('srvRecords')), 0))]]"
+        "srvRecordsCounter": "[variables('srvRecordsEmptyWorkaround')[string(greater(length(parameters('srvRecords')), 0))]]",
+        "vNetLinksEmptyWorkaround": {
+            "true": "[parameters('vNetLinks')]",
+            "false": [
+                {
+                    "vNetNameToLink": "test-vnet-name"
+                }
+            ]
+        },
+        "vNetLinksCounter": "[variables('vNetLinksEmptyWorkaround')[string(greater(length(parameters('vNetLinks')), 0))]]"
     },
     "resources": [
         {
@@ -232,6 +247,26 @@
             "copy": {
                 "name": "srvCopy",
                 "count": "[length(variables('srvRecordsCounter'))]"
+            }
+        },
+        {
+            "condition": "[greater(length(parameters('vNetLinks')), 0)]",
+            "name": "[concat(parameters('zoneName'),'/vnet', parameters('environment'), variables('vNetLinksCounter')[copyIndex()].vNetNameToLink, '-', 'link')]",
+            "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+            "apiVersion": "2018-09-01",
+            "location": "global",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/privateDnsZones', parameters('zoneName'))]"
+            ],
+            "properties": {
+                "registrationEnabled": false,
+                "virtualNetwork": {
+                    "id": "[resourceId('Microsoft.Network/virtualNetworks', variables('vNetLinksCounter')[copyIndex()].vNetNameToLink)]"
+                }
+            },
+            "copy": {
+                "name": "linkCopy",
+                "count": "[length(variables('vNetLinksCounter'))]"
             }
         }
     ]
