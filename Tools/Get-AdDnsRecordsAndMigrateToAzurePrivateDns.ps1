@@ -5,15 +5,15 @@
 
 #Install-Module AZ
 
-#$zones = Get-DnsServerZone
-#$zones = $zones | Where-Object -Property isreverselookupzone -ne "true"
+$zones = Get-DnsServerZone
+$zones = $zones | Where-Object -Property isreverselookupzone -ne "true"
 foreach ($zone in $zones) {
     $dnsr = Get-DnsServerResourceRecord $zone.ZoneName
     
-    #New-AzPrivateDnsZone -Name $zone.ZoneName -ResourceGroupName $ResourceGroupName 
+    New-AzPrivateDnsZone -Name $zone.ZoneName -ResourceGroupName $ResourceGroupName 
     
     #Get NS record for new DNS Zone 
-    #$NS = Get-AzDnsRecordSet -ResourceGroupName $ResourceGroupName -ZoneName $zone.ZoneName -RecordType NS
+    $NS = Get-AzDnsRecordSet -ResourceGroupName $ResourceGroupName -ZoneName $zone.ZoneName -RecordType NS
     
     #Set each record from Windows DNS Server to Azure DNS Zone
     Foreach ($r in $dnsr) {

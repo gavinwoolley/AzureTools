@@ -98,8 +98,19 @@ Function Build-AzurePrivateDnsParamFile() {
         $environmentObject = New-Object System.Object
         $environmentObject | Add-Member -type NoteProperty -name value -value "Global"
 
-        $buildVerObject = New-Object System.Object
-        $buildVerObject | Add-Member -type NoteProperty -name value -value "1.0.0"
+        $buildverObject = New-Object System.Object
+        $buildverObject | Add-Member -type NoteProperty -name value -value "1.0.0"
+ 
+        $vNetLinkRecords = @()
+        $vNetLink = New-Object System.Object
+        $vNetLink | Add-Member -type NoteProperty -name vNetNameToLink -value "test-vnet-1"   
+        $vNetLinkRecords += $vNetLink
+        $vNetLink = New-Object System.Object
+        $vNetLink | Add-Member -type NoteProperty -name vNetNameToLink -value "test-vnet-2"   
+        $vNetLinkRecords += $vNetLink
+
+        $vNetLinksObject = New-Object System.Object
+        $vNetLinksObject | Add-Member -type NoteProperty -name value -value $vNetLinkRecords
  
         $parametersObject = New-Object System.Object
         
@@ -122,9 +133,10 @@ Function Build-AzurePrivateDnsParamFile() {
         $parametersObject | Add-Member -type NoteProperty -name aRecords -value $aRecordsObject
         $parametersObject | Add-Member -type NoteProperty -name mxRecords -value $mxRecordsObject
         $parametersObject | Add-Member -type NoteProperty -name txtRecords -value $txtRecordsObject
-        $parametersObject | Add-Member -type NoteProperty -name srvRecords -value $srvRecordsObject              
+        $parametersObject | Add-Member -type NoteProperty -name srvRecords -value $srvRecordsObject 
+        $parametersObject | Add-Member -type NoteProperty -name vNetLinks -value $vNetLinksObject             
         $parametersObject | Add-Member -type NoteProperty -name environment -value $environmentObject                
-        $parametersObject | Add-Member -type NoteProperty -name buildVer -value $buildVerObject             
+        $parametersObject | Add-Member -type NoteProperty -name buildver -value $buildverObject             
 
         $mergedVersion = New-Object PSObject -Property ([ordered]@{
                 '$schema'      = "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#"
