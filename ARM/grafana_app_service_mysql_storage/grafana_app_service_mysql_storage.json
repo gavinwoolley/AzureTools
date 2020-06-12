@@ -1,0 +1,264 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "serverfarm_name": {
+            "defaultValue": "grafana-asp",
+            "type": "String"
+        },
+        "app_service_name": {
+            "defaultValue": "grafana-as",
+            "type": "String"
+        },
+        "grafanaAppSettings": {
+            "type": "object",
+            "metadata": {
+                "description": "Application settings for Grafana"
+            }
+        },
+        "mysql_server_name": {
+            "defaultValue": "grafana-mysql",
+            "type": "String"
+        },
+        "storage_account_name": {
+            "defaultValue": "devopsgrafanastorage",
+            "type": "String"
+        },
+        "allowed_ip_mysql_firewall": {
+            "type": "string",
+            "metadata": {
+                "description": "IP Allowed through MySql firewall"
+            }
+        },
+        "mySqlAdministratorLogin": {
+            "type": "string",
+            "minLength": 1,
+            "metadata": {
+                "description": "Database administrator login name"
+            }
+        },
+        "mySqlAdministratorLoginPassword": {
+            "type": "securestring",
+            "minLength": 8,
+            "metadata": {
+                "description": "Database administrator password"
+            }
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.DBforMySQL/servers",
+            "apiVersion": "2017-12-01",
+            "name": "[parameters('mysql_server_name')]",
+            "location": "uksouth",
+            "sku": {
+                "name": "B_Gen5_1",
+                "tier": "Basic",
+                "family": "Gen5",
+                "capacity": 1
+            },
+            "properties": {
+                "storageProfile": {
+                    "storageMB": 15360,
+                    "backupRetentionDays": 7,
+                    "geoRedundantBackup": "Disabled",
+                    "storageAutogrow": "Enabled"
+                },
+                "version": "5.7",
+                "sslEnforcement": "Enabled",
+                "minimalTlsVersion": "TLSEnforcementDisabled",
+                "infrastructureEncryption": "Disabled",
+                "publicNetworkAccess": "Enabled",
+                "AdministratorLogin": "[parameters('mySqlAdministratorLogin')]",
+                "AdministratorLoginPassword": "[parameters('mySqlAdministratorLoginPassword')]",
+            },
+            "resources": [
+                {
+                    "type": "firewallrules",
+                    "apiVersion": "2017-12-01",
+                    "dependsOn": [
+                        "[concat('Microsoft.DBforMySQL/servers/', parameters('mysql_server_name'),'/databases/' , 'grafana')]",
+                        "[concat('Microsoft.DBforMySQL/servers/', parameters('mysql_server_name'))]"
+                    ],
+                    "name": "AllowAzureIPs",
+                    "properties": {
+                        "startIpAddress": "0.0.0.0",
+                        "endIpAddress": "255.255.255.255"
+                    }
+                },
+                {
+                    "type": "firewallrules",
+                    "apiVersion": "2017-12-01",
+                    "dependsOn": [
+                        "[concat('Microsoft.DBforMySQL/servers/', parameters('mysql_server_name'),'/databases/' , 'grafana')]",
+                        "[concat('Microsoft.DBforMySQL/servers/', parameters('mysql_server_name'))]"
+                    ],
+                    "name": "ClientIPAddress_1",
+                    "properties": {
+                        "startIpAddress": "[parameters('allowed_ip_mysql_firewall')]",
+                        "endIpAddress": "[parameters('allowed_ip_mysql_firewall')]"
+                    }
+                },
+                {
+                    "name": "grafana",
+                    "type": "databases",
+                    "apiVersion": "2017-12-01",
+                    "properties": {
+                        "charset": "latin1",
+                        "collation": "latin1_swedish_ci"
+                    },
+                    "dependsOn": [
+                        "[concat('Microsoft.DBforMySQL/servers/', parameters('mysql_server_name'))]"
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2019-06-01",
+            "name": "[parameters('storage_account_name')]",
+            "location": "uksouth",
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "kind": "StorageV2",
+            "properties": {
+                "largeFileSharesState": "Enabled",
+                "networkAcls": {
+                    "bypass": "AzureServices",
+                    "virtualNetworkRules": [
+                    ],
+                    "ipRules": [
+                    ],
+                    "defaultAction": "Allow"
+                },
+                "supportsHttpsTrafficOnly": true,
+                "encryption": {
+                    "services": {
+                        "file": {
+                            "keyType": "Account",
+                            "enabled": true
+                        },
+                        "blob": {
+                            "keyType": "Account",
+                            "enabled": true
+                        }
+                    },
+                    "keySource": "Microsoft.Storage"
+                },
+                "accessTier": "Hot"
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/fileServices",
+            "apiVersion": "2019-06-01",
+            "name": "[concat(parameters('storage_account_name'), '/default')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storage_account_name'))]"
+            ],
+            "sku": {
+                "name": "Standard_LRS",
+                "tier": "Standard"
+            },
+            "properties": {
+                "cors": {
+                    "corsRules": [
+                    ]
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "apiVersion": "2018-02-01",
+            "name": "[parameters('serverfarm_name')]",
+            "location": "UK South",
+            "sku": {
+                "name": "P1v2",
+                "tier": "PremiumV2",
+                "size": "P1v2",
+                "family": "Pv2",
+                "capacity": 1
+            },
+            "kind": "linux",
+            "properties": {
+                "perSiteScaling": false,
+                "maximumElasticWorkerCount": 1,
+                "isSpot": false,
+                "reserved": true,
+                "isXenon": false,
+                "hyperV": false,
+                "targetWorkerCount": 0,
+                "targetWorkerSizeId": 0
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "2018-11-01",
+            "name": "[parameters('app_service_name')]",
+            "location": "UK South",
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', parameters('serverfarm_name'))]"
+            ],
+            "kind": "app,linux,container",
+            "properties": {
+                "enabled": true,
+                "hostNameSslStates": [
+                    {
+                        "name": "[concat(parameters('app_service_name'), '.azurewebsites.net')]",
+                        "sslState": "Disabled",
+                        "hostType": "Standard"
+                    },
+                    {
+                        "name": "[concat(parameters('app_service_name'), '.scm.azurewebsites.net')]",
+                        "sslState": "Disabled",
+                        "hostType": "Repository"
+                    }
+                ],
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('serverfarm_name'))]",
+                "siteConfig": {
+                },
+                "scmSiteAlsoStopped": false,
+                "clientAffinityEnabled": false,
+                "httpsOnly": true
+            },
+            "resources": [
+                {
+                    "name": "[concat(parameters('app_service_name'), '/appsettings')]",
+                    "apiVersion": "2019-08-01",
+                    "type": "Microsoft.Web/sites/config",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Web/sites', parameters('app_service_name'))]"
+                    ],
+                    "properties": "[parameters('grafanaAppSettings')]"
+                },
+                {
+                    "type": "Microsoft.Web/sites/config",
+                    "apiVersion": "2018-11-01",
+                    "name": "[concat(parameters('app_service_name'), '/web')]",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Web/sites', parameters('app_service_name'))]"
+                    ],
+                    "properties": {
+                        "netFrameworkVersion": "v4.0",
+                        "linuxFxVersion": "DOCKER|grafana/grafana:7.0.3",
+                        "http20Enabled": false,
+                        "minTlsVersion": "1.2"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
+            "apiVersion": "2019-06-01",
+            "name": "[concat(parameters('storage_account_name'), '/default/grafana')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/fileServices', parameters('storage_account_name'), 'default')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('storage_account_name'))]"
+            ],
+            "properties": {
+                "shareQuota": 102400
+            }
+        }
+    ]
+}

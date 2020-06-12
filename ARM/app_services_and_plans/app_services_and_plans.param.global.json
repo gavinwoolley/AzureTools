@@ -1,0 +1,101 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environment": {
+      "value": "global"
+    },
+    "organization": {
+      "value": "test"
+    },
+    "buildver": {
+      "value": "1.0.0"
+    },
+    "location": {
+      "value": "Uk South"
+    },
+    "app_plans": {
+      "value": [
+        {
+          "name": "appplan1",
+          "properties": {
+            "numberOfWorkers": 1
+          },
+          "sku": {
+            "capacity": "1",
+            "name": "S1",
+            "family": "S",
+            "size": "S1",
+            "tier": "Standard"
+          }
+        },
+        {
+          "name": "appplan2",
+          "properties": {
+            "numberOfWorkers": 1
+          },
+          "sku": {
+            "capacity": "1",
+            "name": "S1",
+            "family": "S",
+            "size": "S1",
+            "tier": "Standard"
+          }
+        }
+      ]
+    },
+    "apps": {
+      "value": [
+        {
+          "name": "devops-monitoring",
+          "kind": "app",
+          "hostingPlan": "appplan1",
+          "clientAffinityEnabled": false,
+          "hasDeploymentSlot": true,
+          "httpsOnly": true,
+          "appSettings": {
+            "sticky_app_settings": [
+              "WEBSITE_LOCAL_CACHE_OPTION",
+              "WEBSITE_LOCAL_CACHE_SIZEINMB"
+            ],
+            "production": {
+              "WEBSITE_LOCAL_CACHE_OPTION": "Always",
+              "WEBSITE_LOCAL_CACHE_SIZEINMB": "300",
+              "WEBSITE_LOAD_CERTIFICATES": "*",
+              "GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP": "true",
+              "GF_AUTH_GENERIC_OAUTH_ALLOWED_ORGANIZATIONS": "\"\"",
+              "GF_AUTH_GENERIC_OAUTH_API_URL": "\"\"",
+              "GF_AUTH_GENERIC_OAUTH_AUTH_URL": "https://login.microsoftonline.com/12678707-5ebb-49cb-b71d-ee5825da3c74/oauth2/authorize",
+              "GF_AUTH_GENERIC_OAUTH_CLIENT_ID": "9994e448-f913-4d1c-befe-c4c4b23d573b",
+              "GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET": "NMft9Zihw[Cq1aL72BFEzahjs-[LpL.P",
+              "GF_AUTH_GENERIC_OAUTH_ENABLED": "true",
+              "GF_AUTH_GENERIC_OAUTH_NAME": "Azure AD",
+              "GF_AUTH_GENERIC_OAUTH_SCOPES": "openid email name",
+              "GF_AUTH_GENERIC_OAUTH_TEAM_IDS": "\"\"",
+              "GF_AUTH_GENERIC_OAUTH_TOKEN_URL": "https://login.microsoftonline.com/12678707-5ebb-49cb-b71d-ee5825da3c74/oauth2/token",
+              "GF_DATABASE_CA_CERT_PATH": "/var/lib/grafana/BaltimoreCyberTrustRoot.crt.pem",
+              "GF_DATABASE_SSL_MODE": "skip-verify",
+              "GF_DATABASE_TYPE": "mysql",
+              "GF_DATABASE_URL": "mysql://grafana@grafana-mysql:grafana123@grafana-mysql.mysql.database.azure.com:3306/grafana",
+              "GF_INSTALL_PLUGINS": "grafana-azure-monitor-datasource,briangann-gauge-panel",
+              "GF_SECURITY_ADMIN_PASSWORD": "S^Dybt43tJOtm9^6m",
+              "GF_SERVER_HTTP_PORT": "3000",
+              "GF_SERVER_ROOT_URL": "https://devops-monitoring.azurewebsites.net/",
+              "GF_SMTP_ENABLED": "true",
+              "GF_SMTP_FROM_ADDRESS": "mail@user.com",
+              "GF_SMTP_FROM_NAME": "Grafana",
+              "GF_SMTP_HOST": "smtp.office365.com:587",
+              "GF_SMTP_PASSWORD": "secretPassW0rd1@",
+              "GF_SMTP_USER": "mail@user.com",
+              "WEBSITES_PORT": "3000",
+              "DOCKER_REGISTRY_SERVER_URL": "https://index.docker.io"
+            }
+          },
+          "siteProperties": {
+            "netFrameworkVersion": "v4.5"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "serverfarm_name": {
+            "value": "grafana-asp"
+        },
+        "app_service_name": {
+            "value": "grafana-as"
+        },
+        "mysql_server_name": {
+            "value": "test-mysql-grafana"
+        },
+        "storage_account_name": {
+            "value": "devopsgrafanastorage"
+        },
+        "allowed_ip_mysql_firewall": {
+            "value": "1.1.1.1"
+        },
+        "mySqlAdministratorLoginPassword": {
+            "value": "secretPa55word123"
+        },
+        "mySqlAdministratorLogin": {
+            "value": "AdminUser"
+        },
+        "grafanaAppSettings": {
+            "value": {
+                "GF_DATABASE_CA_CERT_PATH": "/var/lib/grafana/BaltimoreCyberTrustRoot.crt.pem",
+                "GF_DATABASE_SSL_MODE": "skip-verify",
+                "GF_DATABASE_TYPE": "mysql",
+                "GF_DATABASE_URL": "mysql://AdminUser@test-mysql-grafana:secretPa55word123@test-mysql-grafana.mysql.database.azure.com:3306/grafana",
+                "GF_INSTALL_PLUGINS": "grafana-azure-monitor-datasource,briangann-gauge-panel",
+                "GF_SECURITY_ADMIN_PASSWORD": "AdminPassword",
+                "GF_SERVER_HTTP_PORT": "3000",
+                "GF_SERVER_ROOT_URL": "https://grafana-test-app.azurewebsites.net/",
+                "WEBSITES_PORT": "3000",
+                "DOCKER_REGISTRY_SERVER_URL": "https://index.docker.io"
+            }
+        }
+    }
+}
